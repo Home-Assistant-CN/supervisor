@@ -181,6 +181,16 @@ jobs:
         env:
           CAS_API_KEY: ${{ secrets.CAS_TOKEN }}
 
+
+      # 获取构建的镜像标签
+      - name: Get built image tag
+        id: get_image_tag
+        run: |
+          # 从构建器输出中提取镜像标签
+          IMAGE_TAG=$(docker images --format "{{.Repository}}:{{.Tag}}" | grep "ghcr.io" | head -1)
+          echo "IMAGE_TAG=${IMAGE_TAG}" >> $GITHUB_OUTPUT
+          echo "Extracted image tag: ${IMAGE_TAG}"
+
       # 登录阿里云容器镜像服务
       - name: Login to Aliyun Container Registry
         uses: docker/login-action@v3.3.0
