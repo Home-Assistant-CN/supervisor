@@ -170,7 +170,7 @@ jobs:
         run: echo "BUILD_ARGS=--test" >> $GITHUB_ENV
 
       - name: Build supervisor
-        uses: home-assistant/builder@2024.08.2
+        uses: home-assistant/builder@2025.02.0
         with:
           args: |
             $BUILD_ARGS \
@@ -181,44 +181,34 @@ jobs:
         env:
           CAS_API_KEY: ${{ secrets.CAS_TOKEN }}
 
-
-      # 获取构建的镜像标签
       - name: Get built image tag
         id: get_image_tag
         run: |
-          # 从构建器输出中提取镜像标签
           IMAGE_TAG=$(docker images --format "{{.Repository}}:{{.Tag}}" | grep "ghcr.io" | head -1)
           echo "IMAGE_TAG=${IMAGE_TAG}" >> $GITHUB_OUTPUT
           echo "Extracted image tag: ${IMAGE_TAG}"
 
-      # 登录阿里云容器镜像服务
-      - name: Login to Aliyun Container Registry
+      - name: Login to cn Container Registry
         uses: docker/login-action@v3.3.0
         with:
-          registry: ${{ secrets.CN_REGISTRY }} # registry.cn-hangzhou.aliyuncs.com
-          username: ${{ secrets.CN_REGISTRY_USERNAME }} # 阿里云RAM用户
-          password: ${{ secrets.CN_REGISTRY_PASSWORD }} # 建议使用临时令牌
+          registry: ${{ secrets.CN_REGISTRY }}
+          username: ${{ secrets.CN_REGISTRY_USERNAME }}
+          password: ${{ secrets.CN_REGISTRY_PASSWORD }}
 
-      # 重新标记镜像为阿里云镜像格式
-      - name: Retag image for Aliyun
+      - name: Retag image for cn
         run: |
-          # 阿里云镜像路径
           ALIYUN_BASE="registry.cn-hangzhou.aliyuncs.com/home-assistant-cn"
 
-          # 完整镜像路径
           ALIYUN_VERSION="${ALIYUN_BASE}/${{ matrix.arch }}-hassio-supervisor:${{ needs.init.outputs.version }}"
           ALIYUN_LATEST="${ALIYUN_BASE}/${{ matrix.arch }}-hassio-supervisor:latest"
 
-          # 重新标记镜像
           docker tag "${{ steps.get_image_tag.outputs.IMAGE_TAG }}" $ALIYUN_VERSION
           docker tag "${{ steps.get_image_tag.outputs.IMAGE_TAG }}" $ALIYUN_LATEST
 
-          # 保存变量
           echo "ALIYUN_VERSION=${ALIYUN_VERSION}" >> $GITHUB_ENV
           echo "ALIYUN_LATEST=${ALIYUN_LATEST}" >> $GITHUB_ENV
 
-            # 推送镜像到阿里云
-      - name: Push to Aliyun ACR
+      - name: Push to cn ACR
         run: |
           echo "Pushing version tag: ${ALIYUN_VERSION}"
           docker push ${ALIYUN_VERSION}
@@ -272,7 +262,7 @@ jobs:
 
       - name: Build the Supervisor
         if: needs.init.outputs.publish != 'true'
-        uses: home-assistant/builder@2024.08.2
+        uses: home-assistant/builder@2025.02.0
         with:
           args: |
             --test \
